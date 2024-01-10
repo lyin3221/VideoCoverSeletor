@@ -2,6 +2,6 @@
 <resources>
 
     <dimen name="item_thumb_height">54dp</dimen>
-    <dimen name="item_thumb_width">36dp</dimen>
+    <dimen name="item_thumb_width">54dp</dimen>
 
 </resources>

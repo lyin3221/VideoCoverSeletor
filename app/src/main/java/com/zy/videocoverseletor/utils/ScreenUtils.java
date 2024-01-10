@@ -1,4 +1,4 @@
-package com.zy.videocoverselector.utils;
+package com.zy.videocoverseletor.utils;
 
 import android.app.Activity;
 import android.content.Context;

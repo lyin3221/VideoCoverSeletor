@@ -1,17 +1,14 @@
-package com.zy.videocoverselector.view;
+package com.zy.videocoverseletor.view;
 
-import android.content.pm.ActivityInfo;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.TextureView;
-import android.widget.FrameLayout;
-
-import com.zy.videocoverselector.utils.LogUtils;
 
 import java.io.IOException;
 
@@ -24,7 +21,6 @@ public class VideoPlayer {
     private OnStateChangeListener onStateChangeListener;
     private Handler handler;
     private boolean prePause;
-    private TextureView textureView;
     private boolean isPrepared;
 
     public VideoPlayer() {
@@ -82,7 +78,6 @@ public class VideoPlayer {
      * bind TextureView
      */
     public void setTextureView(TextureView textureView) {
-        this.textureView = textureView;
         if (textureView.isAvailable()) {
             mediaPlayer.setSurface(new Surface(textureView.getSurfaceTexture()));
         } else {

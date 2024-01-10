@@ -2,7 +2,8 @@ package com.zy.videocoverseletor;
 
 import android.app.Application;
 
-import com.zy.videocoverselector.utils.ScreenUtils;
+import com.zy.videocoverseletor.utils.ScreenUtils;
+
 
 public class MyApplication extends Application {
     public static MyApplication myApplictaion;
