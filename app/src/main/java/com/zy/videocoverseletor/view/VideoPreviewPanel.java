@@ -8,15 +8,20 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.Size;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -28,6 +33,7 @@ import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 import com.zy.videocoverseletor.R;
 import com.zy.videocoverseletor.data.VideoData;
 import com.zy.videocoverseletor.data.AVEngine;
+import com.zy.videocoverseletor.utils.ScreenUtils;
 import com.zy.videocoverseletor.utils.VideoUtil;
 
 import java.security.MessageDigest;
@@ -46,6 +52,7 @@ public class VideoPreviewPanel extends RelativeLayout {
     private AVEngine.VideoState mVideoState;
     private List<ViewType> mInfoList = new LinkedList<>();
     private int mThumbSize = 60;
+//    RecyclerViewCornerRadius radiusItemDecoration;
 
     public VideoPreviewPanel(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -71,7 +78,7 @@ public class VideoPreviewPanel extends RelativeLayout {
         //设置相关属性
         relativeLayout.addView(mThumbPreview, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mThumbSize));
         relativeLayout.addView(mClipView, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, mThumbSize + 2 * ClipView.LINE_WIDTH));
-        relativeLayout.addView(mSplitView, new LayoutParams( compatSize(4), ViewGroup.LayoutParams.MATCH_PARENT));
+        relativeLayout.addView(mSplitView, new LayoutParams( compatSize(3), ViewGroup.LayoutParams.MATCH_PARENT));
         ((LayoutParams) mClipView.getLayoutParams()).addRule(CENTER_VERTICAL);
         ((LayoutParams) mClipView.getLayoutParams()).addRule(ALIGN_PARENT_LEFT);
         ((LayoutParams) mSplitView.getLayoutParams()).addRule(CENTER_IN_PARENT);
@@ -88,14 +95,22 @@ public class VideoPreviewPanel extends RelativeLayout {
                 updateClip();
             }
         });
+
         mThumbPreview.setOnScrollListener(new RecyclerView.OnScrollListener() {
+
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
                     AVEngine.getVideoEngine().seek(true);//进入seek模式
+                    if(callback != null){
+                        callback.onScrollStart();
+                    }
                 } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     AVEngine.getVideoEngine().seek(false);//退出seek模式，处于暂停状态
+                    if(callback != null){
+                        callback.onScrollEnd();
+                    }
                 }
                 updateCorrectScrollX();
             }
@@ -126,6 +141,10 @@ public class VideoPreviewPanel extends RelativeLayout {
 
     public interface OnScrollCallback {
         void onScrolled(long position);
+
+        void onScrollStart();
+
+        void onScrollEnd();
     }
 
     private void updateCorrectScrollX() {
@@ -287,7 +306,7 @@ public class VideoPreviewPanel extends RelativeLayout {
         @Override
         public ThumbViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             ImageView view = new ImageView(parent.getContext());
-            view.setScaleType(ImageView.ScaleType.FIT_XY);
+            view.setScaleType(ImageView.ScaleType.CENTER_CROP);
             view.setLayoutParams(new RecyclerView.LayoutParams(viewType == TYPE_HEAD_FOOT ?
                     mLayoutSize.getWidth() / 2 : mThumbSize, mThumbSize));
             return new ThumbViewHolder(view);

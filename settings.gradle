@@ -1,2 +1,2 @@
-include ':app'//,':ucrop'//, ':videocoverselector'
+include ':app',':ucrop'//, ':videocoverselector'
 rootProject.name='VideoCoverSeletor'

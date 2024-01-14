@@ -3,11 +3,16 @@ package com.zy.videocoverseletor.view;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Region;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+
+import com.zy.videocoverseletor.utils.ScreenUtils;
 
 /**
  * 裁剪View
@@ -17,6 +22,7 @@ public class ClipView extends View {
     public static final int mPaintSize = 16;
     public static final int DRAG_BTN_WIDTH = 6;
     public static final int LINE_WIDTH = 6;
+    private static final int CORNER_RADIO = 4;
     private boolean mIsDrag = false;
     private boolean mDragLeft = false;
     private boolean mDragRight = false;
@@ -24,10 +30,16 @@ public class ClipView extends View {
     private Paint mPaint;
     private Rect[] mRect;
     private PointF mDownPoint = new PointF();
+    float topLeftRadius = ScreenUtils.dip2px(CORNER_RADIO);
+    float topRightRadius = ScreenUtils.dip2px(CORNER_RADIO);
+    float bottomLeftRadius = ScreenUtils.dip2px(CORNER_RADIO);
+    float bottomRightRadius = ScreenUtils.dip2px(CORNER_RADIO);
     private ClipCallback mClipCallback;
 
     public ClipView(Context context) {
         super(context);
+        path = new Path();
+
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setColor(0xffFFffff);
@@ -139,14 +151,29 @@ public class ClipView extends View {
         mClipCallback = clipCallback;
     }
 
+    private Path path;
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (!mIsEdit) {
             freshRoi();
         }
-        canvas.drawRect(mRect[0], mPaint);
-        canvas.drawRect(mRect[1], mPaint);
-        canvas.drawRect(mRect[2], mPaint);
-        canvas.drawRect(mRect[3], mPaint);
+        path.reset();
+        RectF rectF = new RectF(mRect[2].left, mRect[2].top, mRect[3].right, mRect[3].bottom);
+        path.addRoundRect(rectF, new float[]{
+                topLeftRadius, topLeftRadius,
+                topRightRadius, topRightRadius,
+                bottomLeftRadius, bottomLeftRadius,
+                bottomRightRadius, bottomRightRadius
+        }, Path.Direction.CCW);
+        canvas.clipRect(rectF);
+        canvas.clipPath(path, Region.Op.REPLACE);
+
+        canvas.drawRect(mRect[0], mPaint);//上
+        canvas.drawRect(mRect[1], mPaint);//下
+        canvas.drawRect(mRect[2], mPaint);//左
+        canvas.drawRect(mRect[3], mPaint);//右
+
+
     }
 }

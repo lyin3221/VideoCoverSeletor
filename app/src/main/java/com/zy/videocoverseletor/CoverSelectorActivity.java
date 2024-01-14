@@ -3,10 +3,9 @@ package com.zy.videocoverseletor;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.util.Size;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
@@ -27,6 +26,24 @@ public class CoverSelectorActivity extends AppCompatActivity {
         initDataObserver();
     }
 
+    public void initDataObserver() {
+        mUGCKitVideoCut = findViewById(R.id.video_cutter_layout);
+        final ImageView mCoverImg = findViewById(R.id.iv_cover);
+        mUGCKitVideoCut.setOnCorpImgListener(new SelectCoverView.OnCorpImgListener() {
+            @Override
+            public void OnCrop(Bitmap bitmap) {
+                mCoverImg.setImageBitmap(bitmap);
+            }
+        });
+
+        findViewById(R.id.btn_select).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mUGCKitVideoCut.cropVideoCover();
+            }
+        });
+    }
+
     private void checkPermission() {
         if (ContextCompat.checkSelfPermission(CoverSelectorActivity.this,
                 Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
@@ -42,14 +59,5 @@ public class CoverSelectorActivity extends AppCompatActivity {
         }
     }
 
-    public void initDataObserver() {
-        mUGCKitVideoCut = findViewById(R.id.video_cutter_layout);
-        final ImageView mCoverImg = findViewById(R.id.iv_cover);
-        findViewById(R.id.btn_select).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCoverImg.setImageBitmap(mUGCKitVideoCut.cropVideoCover());;
-            }
-        });
-    }
+
 }

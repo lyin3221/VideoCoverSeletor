@@ -24,18 +24,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
 
-        <com.theartofdev.edmodo.cropper.CropImageView
+        <com.yalantis.ucrop.view.UCropView
             android:id="@+id/ucv_ucrop"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:cropInitialCropWindowPaddingRatio="0.03"
-            app:cropBorderCornerThickness="0dp"
-            app:cropBorderLineColor="#66b2ff"
-            app:cropMinCropWindowWidth="200dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintBottom_toBottomOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView

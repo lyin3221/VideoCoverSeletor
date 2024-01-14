@@ -35,6 +35,8 @@
         android:name=".MyApplication"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".CoverSelectorActivity">
+        </activity>
+        <activity android:name=".EmptyActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

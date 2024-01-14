@@ -4,42 +4,48 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Size;
 import android.view.TextureView;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
-import com.theartofdev.edmodo.cropper.CropImageView;
+import com.yalantis.ucrop.callback.BitmapCropCallback;
+import com.yalantis.ucrop.view.GestureCropImageView;
+import com.yalantis.ucrop.view.OverlayView;
+import com.yalantis.ucrop.view.UCropView;
 import com.zy.videocoverseletor.R;
 import com.zy.videocoverseletor.data.VideoData;
 import com.zy.videocoverseletor.data.AVEngine;
 import com.zy.videocoverseletor.utils.VideoUtil;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
-
 
 public class SelectCoverView extends RelativeLayout {
-    private CropImageView uCropView;
-//    private String mVideoPath = "/storage/emulated/0/DCIM/Camera/6676.mp4";
+    private UCropView uCropView;
+    private GestureCropImageView cropImageView;
+    private OverlayView overlayView;
+    private String mVideoPath = "/storage/emulated/0/DCIM/Camera/6676.mp4";
 //    private String mVideoPath = "https://cache.bydauto.com.cn/dilink_user_upload_dev/xxl/202312/29/1358147gOchfEJ.mp4";
-    private String mVideoPath = "https://cache.bydauto.com.cn/dilink_user_upload/xxl/202306/25/141345hDYJs0ge.mp4";
+//    private String mVideoPath = "https://cache.bydauto.com.cn/dilink_user_upload/xxl/202306/25/141345hDYJs0ge.mp4";
 
 //        private String mVideoPath = "http://cdnxdc.tanzi88.com/XDC/dvideo/2018/02/29/056bf3fabc41a1c1257ea7f69b5ee787.mp4";
     private VideoPlayer videoPlayer;
     private TextureView mTextureView;
 
-    private boolean mComplete = false;
-    private long mStartTime = 0;
     private VideoPreviewPanel mVideoPreViewPanel;
     private AVEngine mAVEngine;
     private TextView mTimeInfo;
@@ -71,18 +77,43 @@ public class SelectCoverView extends RelativeLayout {
             public void onScrolled(long position) {
                 videoPlayer.seekTo(position/1000);
             }
+
+            @Override
+            public void onScrollStart() {
+                mTextureView.setVisibility(View.VISIBLE);
+                Bitmap bitmap = Bitmap.createBitmap(mTextureView.getWidth(), mTextureView.getHeight(),
+                        Bitmap.Config.ARGB_8888);
+                bitmap.eraseColor(Color.TRANSPARENT);
+                cropImageView.setImageBitmap(bitmap);
+            }
+
+            @Override
+            public void onScrollEnd() {
+                mTextureView.setVisibility(View.GONE);
+                cropImageView.setImageBitmap(mTextureView.getBitmap());
+                cropImageView.zoomOutImage(1);
+                float centerX = overlayView.getCropViewRect().centerX();
+                float centerY = overlayView.getCropViewRect().centerY();
+                float currentX = cropImageView.mCurrentImageCenter[0];
+                float currentY = cropImageView.mCurrentImageCenter[1];
+                cropImageView.postTranslate(centerX - currentX, centerY - currentY);
+            }
         });
         mVideoPreViewPanel.setmTimeInfo(mTimeInfo);
-
         mAVEngine = AVEngine.getVideoEngine();
-
         videoPlayer = new VideoPlayer();
         videoPlayer.setTextureView(mTextureView);
 
         uCropView = findViewById(R.id.ucv_ucrop);
-        uCropView.setAspectRatio(5, 4);
-        uCropView.setFixedAspectRatio(true);
-        uCropView.setGuidelines(CropImageView.Guidelines.OFF);
+        overlayView = uCropView.getOverlayView();
+        overlayView.setShowCropFrame(true);
+        overlayView.setShowCropGrid(false);
+        overlayView.setPadding(0,0,0,0);
+        cropImageView = uCropView.getCropImageView();
+        cropImageView.setRotateEnabled(false);
+        cropImageView.setAdjustViewBounds(true);
+        cropImageView.setTargetAspectRatio(1.25f);
+        cropImageView.setPadding(0,0,0,0);
 
         bindViewTreeCallback();
     }
@@ -124,8 +155,18 @@ public class SelectCoverView extends RelativeLayout {
                                 Bitmap bitmap = Bitmap.createBitmap(size.getWidth(), size.getHeight(),
                                         Bitmap.Config.ARGB_8888);
                                 bitmap.eraseColor(Color.TRANSPARENT);
-                                uCropView.setImageBitmap(bitmap);
-                                mTextureView.requestLayout();
+                                ConstraintLayout.LayoutParams layoutParams = (ConstraintLayout.LayoutParams) uCropView.getLayoutParams();
+                                layoutParams.width = size.getWidth();
+                                layoutParams.height = size.getHeight();
+                                uCropView.setLayoutParams(layoutParams);
+                                try {
+                                    Uri outputUri = Uri.fromFile(new File(getContext().getCacheDir(), "test.png"));
+                                    Uri inputUri = Uri.parse(MediaStore.Images.Media.insertImage(getContext().getContentResolver(), bitmap, null,null));
+                                    cropImageView.setImageUri(inputUri, outputUri);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+//                                mTextureView.requestLayout();
                             }
                         });
                     }
@@ -136,13 +177,9 @@ public class SelectCoverView extends RelativeLayout {
 
     private void loadVideoData(){
         LinkedList<VideoUtil.FileEntry> mFiles = new LinkedList<>();
-        List<String> mp4List = new LinkedList<>();
-        mp4List.add(mVideoPath);
-//        mp4List.add(new File(mVideoPath));
-        for (String mp4Url : mp4List) {
             MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
             try {
-                mediaMetadataRetriever.setDataSource(mp4Url, new HashMap<>());
+                mediaMetadataRetriever.setDataSource(mVideoPath, new HashMap<>());
 //                mediaMetadataRetriever.setDataSource(mp4.getAbsolutePath());
                 if (Integer.parseInt(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)) > 0) {
                     VideoUtil.FileEntry fileEntry = new VideoUtil.FileEntry();
@@ -151,7 +188,7 @@ public class SelectCoverView extends RelativeLayout {
                     fileEntry.thumb = mediaMetadataRetriever.getFrameAtTime(0);
                     fileEntry.width = Integer.parseInt(mediaMetadataRetriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
                     fileEntry.height = Integer.parseInt(mediaMetadataRetriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
-                    fileEntry.path = mp4Url;
+                    fileEntry.path = mVideoPath;
                     fileEntry.adjustPath = VideoUtil.getAdjustGopVideoPath(getContext(), fileEntry.path);
                     mFiles.add(fileEntry);
                 }
@@ -160,7 +197,6 @@ public class SelectCoverView extends RelativeLayout {
             } finally {
                 mediaMetadataRetriever.release();
             }
-        }
         VideoUtil.processVideo(getContext(), mFiles, new Handler.Callback() {
             @Override
             public boolean handleMessage(@NonNull Message message) {
@@ -174,7 +210,6 @@ public class SelectCoverView extends RelativeLayout {
         videoPlayer.setOnStateChangeListener(new VideoPlayer.OnStateChangeListener() {
             @Override
             public void onPrepared() {
-                mComplete = false;
                 videoPlayer.seekTo(0);
             }
 
@@ -206,21 +241,36 @@ public class SelectCoverView extends RelativeLayout {
         videoPlayer.prepare();
     }
 
-    public Bitmap cropVideoCover() {
-        Rect rect = uCropView.getCropRect();
-        uCropView.setImageBitmap(mTextureView.getBitmap());
-        uCropView.setCropRect(rect);
+    private Bitmap outupBitmap;
+    public void cropVideoCover() {
+        cropImageView.cropAndSaveImage(Bitmap.CompressFormat.PNG, 100, new BitmapCropCallback() {
+            @Override
+            public void onBitmapCropped(@NonNull Uri resultUri, int offsetX, int offsetY, int imageWidth, int imageHeight) {
+                try {
+                    outupBitmap = MediaStore.Images.Media.getBitmap(getContext().getContentResolver(), resultUri);
+                    if(onCorpImgListener != null){
+                        onCorpImgListener.OnCrop(outupBitmap);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
 
-        Bitmap outupBitmap = uCropView.getCroppedImage();
+            @Override
+            public void onCropFailure(@NonNull Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
 
-        Bitmap bitmap = Bitmap.createBitmap(mTextureView.getWidth(), mTextureView.getHeight(),
-                Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(Color.TRANSPARENT);
-        rect = uCropView.getCropRect();
-        uCropView.setImageBitmap(bitmap);
-        uCropView.setCropRect(rect);
+    private OnCorpImgListener onCorpImgListener;
 
-        return outupBitmap;
+    public void setOnCorpImgListener(OnCorpImgListener onCorpImgListener) {
+        this.onCorpImgListener = onCorpImgListener;
+    }
+
+    public interface OnCorpImgListener{
+        void OnCrop(Bitmap bitmap);
     }
 
 }
